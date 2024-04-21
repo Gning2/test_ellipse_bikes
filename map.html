@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stations de Vélos</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        #map {
+            height: 600px;
+        }
+        .details {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Créer une carte Leaflet centrée sur  France
+        var map = L.map('map').setView([46.603354, 1.888334], 6);
+
+        // Ajouter une couche de tuiles OpenStreetMap à la carte
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        function updateMarkers() {
+            // Récupérer les données des stations de vélos depuis l'API JCDecaux
+            fetch("https://api.jcdecaux.com/vls/v3/stations?apiKey=e0a1bf2c844edb9084efc764c089dd748676cc14")
+                .then(response => response.json())
+                .then(data => {
+                    // Supprimer tous les marqueurs existants
+                    map.eachLayer(function (layer) {
+                        if (layer instanceof L.Marker) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    // Ajouter un marqueur pour chaque station
+                    data.forEach(station => {
+                        var marker = L.marker([station.position.latitude, station.position.longitude]).addTo(map);
+                        marker.bindPopup(`<b>${station.name}</b><br>Vélos disponibles: ${station.mainStands.availabilities.bikes}<br>Mécaniques: ${station.mainStands.availabilities.mechanicalBikes}<br>Electriques: ${station.mainStands.availabilities.electricalBikes}<br>Places de stationnement disponibles: ${station.mainStands.availabilities.stands}`);
+                    });
+                })
+                .catch(error => console.log(error));
+        }
+
+        // Mettre à jour les marqueurs toutes les minutes
+        setInterval(updateMarkers, 60000);
+
+        // Mettre à jour les marqueurs immédiatement au chargement de la page
+        updateMarkers();
+    </script>
+</body>
+</html>
